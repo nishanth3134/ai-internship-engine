@@ -1,22 +1,25 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    const token = localStorage.getItem('token');
+    if (!token) {
       router.push('/login');
+      return;
     }
-  }, [status, router]);
+    setLoading(false);
+  }, [router]);
 
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Loading...</p>
@@ -30,10 +33,13 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">Internship Scheme</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm">{session?.user?.name}</span>
+            <span className="text-sm">{userData?.name || 'User'}</span>
             <Button
               variant="outline"
-              onClick={() => signOut({ redirect: true, callbackUrl: '/login' })}
+              onClick={() => {
+                localStorage.removeItem('token');
+                router.push('/login');
+              }}
             >
               Sign Out
             </Button>
@@ -42,7 +48,7 @@ export default function DashboardPage() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-xl font-semibold mb-6">Welcome, {session?.user?.name}!</h2>
+        <h2 className="text-xl font-semibold mb-6">Welcome, {userData?.name || 'User'}!</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
@@ -57,7 +63,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {(session?.user as any)?.role === 'recruiter' && (
+          {userData?.role === 'recruiter' && (
             <Card>
               <CardHeader>
                 <CardTitle>Post an Internship</CardTitle>

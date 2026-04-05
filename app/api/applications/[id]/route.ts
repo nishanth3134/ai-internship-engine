@@ -4,8 +4,6 @@ import { Application } from '@/lib/models/Application';
 import { Student } from '@/lib/models/Student';
 import { User } from '@/lib/models/User';
 import { Internship } from '@/lib/models/Internship';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
 import { sendApplicationStatusUpdate, sendNewApplicationNotification } from '@/lib/email';
 import mongoose from 'mongoose';
 
@@ -40,9 +38,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!session || (session.user as any).role !== 'recruiter') {
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

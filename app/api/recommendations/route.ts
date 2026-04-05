@@ -3,21 +3,20 @@ import { connectDB } from '@/lib/db';
 import { Student } from '@/lib/models/Student';
 import { Internship } from '@/lib/models/Internship';
 import { Application } from '@/lib/models/Application';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
 import { calculateMatchScore } from '@/lib/ai-matching';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!session || (session.user as any).role !== 'student') {
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
 
-    const student = await Student.findOne({ userId: (session.user as any).id });
+    const student = await Student.findOne({ userId: token });
 
     if (!student) {
       return NextResponse.json({ error: 'Student profile not found' }, { status: 404 });

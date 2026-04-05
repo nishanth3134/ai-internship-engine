@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Internship } from '@/lib/models/Internship';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,9 +51,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!session || (session.user as any).role !== 'recruiter') {
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

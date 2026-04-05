@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -24,17 +23,20 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (result?.error) {
-        setError('Invalid email or password');
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.message || 'Invalid email or password');
         return;
       }
 
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
       router.push('/dashboard');
     } catch (err) {
       setError('An error occurred');

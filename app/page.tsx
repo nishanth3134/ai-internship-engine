@@ -1,13 +1,8 @@
-'use client';
-
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Home() {
-  const { data: session } = useSession();
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
@@ -15,20 +10,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-3xl font-bold text-blue-600">Internship Scheme</h1>
           <div className="flex gap-4">
-            {!session ? (
-              <>
-                <Link href="/login">
-                  <Button variant="outline">Sign In</Button>
-                </Link>
-                <Link href="/register">
-                  <Button>Get Started</Button>
-                </Link>
-              </>
-            ) : (
-              <Link href="/dashboard">
-                <Button>Go to Dashboard</Button>
-              </Link>
-            )}
+            <Link href="/login">
+              <Button variant="outline">Sign In</Button>
+            </Link>
+            <Link href="/register">
+              <Button>Get Started</Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -43,20 +30,16 @@ export default function Home() {
             Internship Scheme uses advanced AI algorithms to match students with internships that align perfectly with their skills, interests, and career goals.
           </p>
           <div className="flex gap-4 justify-center">
-            {!session ? (
-              <>
-                <Link href="/register?role=student">
-                  <Button size="lg" className="text-lg px-8 py-6">
-                    Find Internships
-                  </Button>
-                </Link>
-                <Link href="/register?role=recruiter">
-                  <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-                    Post Internship
-                  </Button>
-                </Link>
-              </>
-            ) : null}
+            <Link href="/register?role=student">
+              <Button size="lg" className="text-lg px-8 py-6">
+                Find Internships
+              </Button>
+            </Link>
+            <Link href="/register?role=recruiter">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                Post Internship
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -142,13 +125,11 @@ export default function Home() {
           <p className="text-xl text-gray-600 mb-8">
             Join thousands of students who have found their perfect internship through Internship Scheme.
           </p>
-          {!session ? (
-            <Link href="/register">
-              <Button size="lg" className="text-lg px-8 py-6">
-                Create Your Free Account
-              </Button>
-            </Link>
-          ) : null}
+          <Link href="/register">
+            <Button size="lg" className="text-lg px-8 py-6">
+              Create Your Free Account
+            </Button>
+          </Link>
         </div>
       </section>
 

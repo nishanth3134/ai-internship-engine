@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Student } from '@/lib/models/Student';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!session) {
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
 
-    let student = await Student.findOne({ userId: (session.user as any).id });
+    let student = await Student.findOne({ userId: token });
 
     if (!student) {
       student = new Student({
@@ -34,9 +33,10 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!session) {
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -44,11 +44,11 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
-    let student = await Student.findOne({ userId: (session.user as any).id });
+    let student = await Student.findOne({ userId: token });
 
     if (!student) {
       student = new Student({
-        userId: (session.user as any).id,
+        userId: token,
         ...body,
       });
     } else {

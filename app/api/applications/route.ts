@@ -4,21 +4,20 @@ import { Application } from '@/lib/models/Application';
 import { Student } from '@/lib/models/Student';
 import { User } from '@/lib/models/User';
 import { Internship } from '@/lib/models/Internship';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
 import { sendApplicationNotification, sendNewApplicationNotification } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!session) {
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
 
-    const student = await Student.findOne({ userId: (session.user as any).id });
+    const student = await Student.findOne({ userId: token });
 
     if (!student) {
       return NextResponse.json([]);
@@ -36,9 +35,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!session || (session.user as any).role !== 'student') {
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing internshipId' }, { status: 400 });
     }
 
-    const student = await Student.findOne({ userId: (session.user as any).id });
+    const student = await Student.findOne({ userId: token });
 
     if (!student) {
       return NextResponse.json({ error: 'Student profile not found' }, { status: 404 });

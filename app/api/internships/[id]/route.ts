@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Internship } from '@/lib/models/Internship';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
 import mongoose from 'mongoose';
 
 export async function GET(
@@ -35,9 +33,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!session || (session.user as any).role !== 'recruiter') {
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -51,10 +50,6 @@ export async function PUT(
 
     if (!internship) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-
-    if (internship.createdBy.toString() !== (session.user as any).id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
