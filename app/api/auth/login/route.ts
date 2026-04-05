@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
-import { comparePassword } from '@/lib/auth';
+import { comparePasswords } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isPasswordValid = await comparePassword(password, user.password);
+    const isPasswordValid = await comparePasswords(password, user.password);
 
     if (!isPasswordValid) {
       return NextResponse.json(
