@@ -2,14 +2,6 @@ import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-console.log('[v0] DEBUG: process.env.MONGODB_URI =', MONGODB_URI ? `${MONGODB_URI.substring(0, 50)}...` : 'NOT SET');
-console.log('[v0] DEBUG: Available env keys with MONGO:', Object.keys(process.env).filter(k => k.includes('MONGO')));
-
-if (!MONGODB_URI) {
-  console.error('[v0] ERROR: MONGODB_URI environment variable is not set!');
-  console.error('[v0] Please set MONGODB_URI in your project environment variables (Settings → Vars)');
-}
-
 let cached = (global as any).mongoose;
 
 if (!cached) {
