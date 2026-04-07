@@ -32,9 +32,12 @@ export async function connectDB() {
       return mongoose;
     }).catch((error) => {
       console.error('[v0] MongoDB connection error:', error.message);
-      throw new Error(
-        `MongoDB connection failed: ${error.message}. Make sure your MONGODB_URI is correct and your database is accessible.`
-      );
+      const isWhitelistError = error.message.includes('whitelist') || error.message.includes('IP');
+      const helpMessage = isWhitelistError
+        ? '\n\n⚠️ IP Whitelist Error: Your server IP is not whitelisted in MongoDB Atlas.\n\nFix: Go to mongodb.com → Your Cluster → Network Access → Add IP Address → Allow Access from Anywhere (0.0.0.0/0) for development.'
+        : '\n\n⚠️ Connection Error: Make sure your MONGODB_URI is correct and your MongoDB Atlas cluster is running.';
+      
+      throw new Error(`MongoDB connection failed: ${error.message}${helpMessage}`);
     });
   }
   cached.conn = await cached.promise;
