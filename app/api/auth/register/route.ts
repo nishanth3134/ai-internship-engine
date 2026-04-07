@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
+    console.error('[v0] Registration error:', error);
     return NextResponse.json(
       { error: error.message || 'An error occurred' },
       { status: 400 }
