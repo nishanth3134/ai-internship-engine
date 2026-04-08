@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { User } from '@/lib/models/User';
-import { comparePasswords } from '@/lib/auth';
+import { comparePasswords, getUserByEmail } from '@/lib/auth-supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -16,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await User.findOne({ email });
+    const user = await getUserByEmail(email);
 
     if (!user) {
       return NextResponse.json(
@@ -34,13 +30,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For simplicity, use user ID as token (in production, use proper JWT)
-    const token = user._id.toString();
+    // Use user ID as token (in production, use proper JWT)
+    const token = user.id;
 
     return NextResponse.json({
       token,
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,

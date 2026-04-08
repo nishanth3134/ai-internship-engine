@@ -1,31 +1,28 @@
-import mongoose from 'mongoose';
+import { createClient } from '@supabase/supabase-js';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please add your MONGODB_URI to .env.local');
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-let cached = (global as any).mongoose;
+// For server-side operations with service role key
+const supabaseServiceUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
-}
+export const supabaseServer = supabaseServiceKey
+  ? createClient(supabaseServiceUrl!, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+  : supabase;
 
 export async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
-  }
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
+  // Supabase is already initialized above
+  return { connected: true };
 }
