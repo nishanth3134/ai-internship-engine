@@ -38,7 +38,7 @@ export async function createUser(
       .from('users')
       .insert({
         email,
-        password: hashedPassword,
+        password_hash: hashedPassword,
         name,
         role,
         created_at: new Date().toISOString(),
