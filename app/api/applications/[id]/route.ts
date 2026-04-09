@@ -1,27 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Application } from '@/lib/models/Application';
-import { Student } from '@/lib/models/Student';
-import { User } from '@/lib/models/User';
-import { Internship } from '@/lib/models/Internship';
-import { sendApplicationStatusUpdate, sendNewApplicationNotification } from '@/lib/email';
-import mongoose from 'mongoose';
+import { supabase } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectDB();
-
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-    }
-
-    const application = await Application.findById(params.id)
-      .populate('internshipId')
-      .populate('studentId')
-      .lean();
+    const { data: application } = await supabase
+      .from('applications')
+      .select(`
+        *,
+        internship:internship_id(*),
+        student:student_id(*)
+      `)
+      .eq('id', params.id)
+      .single();
 
     if (!application) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -44,6 +37,39 @@ export async function PUT(
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const body = await request.json();
+    const { status, feedback } = body;
+
+    // Get application
+    const { data: application } = await supabase
+      .from('applications')
+      .select('*')
+      .eq('id', params.id)
+      .single();
+
+    if (!application) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    // Update application
+    const { data: updated, error } = await supabase
+      .from('applications')
+      .update({
+        status: status || application.status,
+        feedback: feedback || application.feedback,
+      })
+      .eq('id', params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json(updated);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
 
     await connectDB();
 

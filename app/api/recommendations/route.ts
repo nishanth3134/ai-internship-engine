@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Student } from '@/lib/models/Student';
-import { Internship } from '@/lib/models/Internship';
-import { Application } from '@/lib/models/Application';
+import { supabase } from '@/lib/db';
 import { calculateMatchScore } from '@/lib/ai-matching';
 
 export async function GET(request: NextRequest) {
@@ -14,45 +11,56 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
-    const student = await Student.findOne({ userId: token });
+    // Get student
+    const { data: student } = await supabase
+      .from('students')
+      .select('*')
+      .eq('user_id', token)
+      .single();
 
     if (!student) {
       return NextResponse.json({ error: 'Student profile not found' }, { status: 404 });
     }
 
-    // Get applied internships to exclude from recommendations
-    const appliedInternships = await Application.find({ studentId: student._id }).select(
-      'internshipId'
-    );
-    const appliedIds = appliedInternships.map((app) => app.internshipId);
+    // Get applied internships
+    const { data: appliedApps } = await supabase
+      .from('applications')
+      .select('internship_id')
+      .eq('student_id', student.id);
 
-    // Get active internships, excluding already applied ones
-    const internships = await Internship.find({
-      status: 'active',
-      _id: { $nin: appliedIds },
-    });
+    const appliedIds = appliedApps?.map((app: any) => app.internship_id) || [];
+
+    // Get active internships
+    let query = supabase
+      .from('internships')
+      .select('*')
+      .eq('status', 'active');
+
+    if (appliedIds.length > 0) {
+      query = query.not('id', 'in', `(${appliedIds.join(',')})`) as any;
+    }
+
+    const { data: internships } = await query;
 
     // Calculate match scores
-    const recommendations = internships
+    const recommendations = (internships || [])
       .map((internship) => ({
         internship,
         matchScore: calculateMatchScore(
           {
-            skills: student.skills,
-            interests: student.interests,
-            experience: student.experience,
-            university: student.university,
-            gpa: student.gpa,
-            preferences: student.preferences,
+            skills: student.skills || [],
+            interests: student.interests || [],
+            experience: student.experience || 'Beginner',
+            university: student.university || '',
+            gpa: student.gpa || 0,
+            preferences: student.preferences || {},
           },
           {
             title: internship.title,
-            skills: internship.skills,
-            requirements: internship.requirements,
+            skills: internship.skills || [],
+            requirements: internship.requirements || [],
             location: internship.location,
-            internshipType: internship.internshipType,
+            internshipType: internship.internship_type,
             duration: internship.duration,
           }
         ),
@@ -60,7 +68,7 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, 10) // Return top 10 recommendations
       .map((rec) => ({
-        ...rec.internship.toObject(),
+        ...rec.internship,
         matchScore: rec.matchScore,
       }));
 

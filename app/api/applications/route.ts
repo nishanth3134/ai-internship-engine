@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Application } from '@/lib/models/Application';
-import { Student } from '@/lib/models/Student';
-import { User } from '@/lib/models/User';
-import { Internship } from '@/lib/models/Internship';
-import { sendApplicationNotification, sendNewApplicationNotification } from '@/lib/email';
+import { supabase } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,19 +10,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
-    const student = await Student.findOne({ userId: token });
+    // Get student
+    const { data: student } = await supabase
+      .from('students')
+      .select('id')
+      .eq('user_id', token)
+      .single();
 
     if (!student) {
       return NextResponse.json([]);
     }
 
-    const applications = await Application.find({ studentId: student._id })
-      .populate('internshipId')
-      .sort({ appliedAt: -1 });
+    // Get applications with internship details
+    const { data: applications } = await supabase
+      .from('applications')
+      .select(`
+        *,
+        internship:internship_id(*)
+      `)
+      .eq('student_id', student.id)
+      .order('created_at', { ascending: false });
 
-    return NextResponse.json(applications);
+    return NextResponse.json(applications || []);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -42,26 +46,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
     const body = await request.json();
     const { internshipId, resume, coverLetter } = body;
 
     if (!internshipId) {
-      return NextResponse.json({ error: 'Missing internshipId' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing internshipId' },
+        { status: 400 }
+      );
     }
 
-    const student = await Student.findOne({ userId: token });
+    // Get student
+    const { data: student } = await supabase
+      .from('students')
+      .select('id')
+      .eq('user_id', token)
+      .single();
 
     if (!student) {
       return NextResponse.json({ error: 'Student profile not found' }, { status: 404 });
     }
 
     // Check if already applied
-    const existingApplication = await Application.findOne({
-      internshipId,
-      studentId: student._id,
-    });
+    const { data: existingApplication } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('internship_id', internshipId)
+      .eq('student_id', student.id)
+      .single();
 
     if (existingApplication) {
       return NextResponse.json(
@@ -69,6 +81,32 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Create application
+    const { data: application, error } = await supabase
+      .from('applications')
+      .insert({
+        internship_id: internshipId,
+        student_id: student.id,
+        resume: resume || null,
+        cover_letter: coverLetter || null,
+        status: 'applied',
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json(application, { status: 201 });
+  } catch (error: any) {
+    console.error('[v0] Application error:', error);
+    return NextResponse.json(
+      { error: error.message || 'An error occurred' },
+      { status: 400 }
+    );
+  }
+}
 
     const application = new Application({
       internshipId,
