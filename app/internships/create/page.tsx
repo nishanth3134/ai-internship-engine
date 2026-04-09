@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +9,10 @@ import { Spinner } from '@/components/ui/spinner';
 
 export default function CreateInternshipPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [token, setToken] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     company: '',
@@ -28,11 +28,21 @@ export default function CreateInternshipPage() {
     internshipType: 'Full-time',
   });
 
-  if (status === 'loading') {
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) {
+      router.push('/login');
+      return;
+    }
+    setToken(storedToken);
+    setIsInitialized(true);
+  }, [router]);
+
+  if (!isInitialized) {
     return <div className="min-h-screen flex items-center justify-center"><Spinner /></div>;
   }
 
-  if (status === 'unauthenticated' || (session?.user as any)?.role !== 'recruiter') {
+  if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

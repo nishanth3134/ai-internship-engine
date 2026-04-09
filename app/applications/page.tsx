@@ -2,42 +2,39 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 interface Application {
-  _id: string;
-  internshipId: {
-    _id: string;
+  id: string;
+  internship_id: {
+    id: string;
     title: string;
     company: string;
     location: string;
   };
   status: 'applied' | 'shortlisted' | 'rejected' | 'accepted';
-  appliedAt: string;
-  matchScore?: number;
+  created_at: string;
+  match_score?: number;
 }
 
 export default function ApplicationsPage() {
   const router = useRouter();
-  const { status } = useSession();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    const token = localStorage.getItem('token');
+    if (!token) {
       router.push('/login');
       return;
     }
 
-    if (status === 'authenticated') {
-      fetchApplications();
-    }
-  }, [status, router]);
+    fetchApplications(token);
+  }, [router]);
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (token: string) => {
     try {
       const response = await fetch('/api/applications');
       if (response.ok) {

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,11 +9,11 @@ import { Spinner } from '@/components/ui/spinner';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [token, setToken] = useState('');
   const [formData, setFormData] = useState({
     bio: '',
     skills: '',
@@ -27,17 +26,17 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) {
       router.push('/login');
       return;
     }
 
-    if (status === 'authenticated' && (session?.user as any)?.role === 'student') {
-      fetchProfile();
-    }
-  }, [status, router, session]);
+    setToken(storedToken);
+    fetchProfile(storedToken);
+  }, [router]);
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (token: string) => {
     try {
       const response = await fetch('/api/student/profile');
       if (response.ok) {

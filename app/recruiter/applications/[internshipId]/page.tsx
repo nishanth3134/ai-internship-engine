@@ -2,18 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 
 interface Application {
-  _id: string;
-  internshipId: any;
-  studentId: {
-    _id: string;
-    userId: {
+  id: string;
+  internship_id: any;
+  student_id: {
+    id: string;
+    user_id: {
       name: string;
       email: string;
     };
@@ -23,20 +22,30 @@ interface Application {
     gpa: number;
   };
   status: string;
-  appliedAt: string;
-  matchScore: number;
+  created_at: string;
+  match_score: number;
   resume?: string;
-  coverLetter?: string;
+  cover_letter?: string;
 }
 
 export default function ApplicationsReviewPage() {
   const params = useParams();
   const router = useRouter();
-  const { status } = useSession();
   const [applications, setApplications] = useState<Application[]>([]);
   const [internship, setInternship] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) {
+      router.push('/login');
+      return;
+    }
+
+    setToken(storedToken);
+  }, [router]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
