@@ -14,6 +14,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [token, setToken] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
   const [formData, setFormData] = useState({
     bio: '',
     skills: '',
@@ -33,6 +34,7 @@ export default function ProfilePage() {
     }
 
     setToken(storedToken);
+    setIsInitialized(true);
     fetchProfile(storedToken);
   }, [router]);
 
@@ -101,7 +103,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (!isInitialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Spinner />
@@ -109,12 +111,12 @@ export default function ProfilePage() {
     );
   }
 
-  if ((session?.user as any)?.role !== 'student') {
+  if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-lg mb-4">Only students can view their profile</p>
-          <Button onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
+          <p className="text-lg mb-4">Authentication required</p>
+          <Button onClick={() => router.push('/login')}>Go to Login</Button>
         </div>
       </div>
     );
