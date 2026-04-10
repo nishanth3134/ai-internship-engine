@@ -3,9 +3,10 @@ import { supabase } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { data: application } = await supabase
       .from('applications')
       .select(`
@@ -13,7 +14,7 @@ export async function GET(
         internship:internship_id(*),
         student:student_id(*)
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!application) {
@@ -28,9 +29,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
 
@@ -45,7 +47,7 @@ export async function PUT(
     const { data: application } = await supabase
       .from('applications')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!application) {
@@ -59,7 +61,7 @@ export async function PUT(
         status: status || application.status,
         feedback: feedback || application.feedback,
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 

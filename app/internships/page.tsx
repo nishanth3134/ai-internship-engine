@@ -8,14 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 
 interface Internship {
-  _id: string;
+  id: string;
   title: string;
   company: string;
   location: string;
   duration: string;
   stipend?: number;
   skills: string[];
-  matchScore?: number;
+  match_score?: number;
 }
 
 export default function InternshipsPage() {
@@ -103,17 +103,17 @@ export default function InternshipsPage() {
         ) : (
           <div className="grid gap-6">
             {internships.map((internship) => (
-              <Card key={internship._id} className="hover:shadow-lg transition-shadow">
+              <Card key={internship.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <CardTitle className="text-xl">{internship.title}</CardTitle>
                       <CardDescription>{internship.company}</CardDescription>
                     </div>
-                    {internship.matchScore !== undefined && (
+                    {internship.match_score !== undefined && (
                       <div className="text-right">
                         <div className="text-2xl font-bold text-blue-600">
-                          {internship.matchScore}%
+                          {internship.match_score}%
                         </div>
                         <div className="text-xs text-gray-500">Match Score</div>
                       </div>
@@ -152,7 +152,7 @@ export default function InternshipsPage() {
                     </div>
                   </div>
 
-                  <Link href={`/internships/${internship._id}`}>
+                  <Link href={`/internships/${internship.id}`}>
                     <Button className="w-full">View Details & Apply</Button>
                   </Link>
                 </CardContent>
