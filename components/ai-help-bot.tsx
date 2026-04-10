@@ -1,6 +1,6 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
+import { useChat, DefaultChatTransport } from '@ai-sdk/react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,8 +21,10 @@ export function AIHelpBot() {
   const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: '/api/ai/recommendations-chat',
+  const { messages, input = '', setInput, handleInputChange, handleSubmit, isLoading } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/ai/recommendations-chat',
+    }),
     body: { userId },
   });
 
@@ -150,7 +152,7 @@ export function AIHelpBot() {
             />
             <Button
               type="submit"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || !input || !input.trim()}
               size="sm"
               className="bg-blue-600 hover:bg-blue-700"
             >
