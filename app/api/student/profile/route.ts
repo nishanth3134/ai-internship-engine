@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Student } from '@/lib/models/Student';
+import { supabase } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,18 +10,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
-    let student = await Student.findOne({ userId: token });
+    let { data: student } = await supabase
+      .from('students')
+      .select('*')
+      .eq('user_id', token)
+      .single();
 
     if (!student) {
-      student = new Student({
-        userId: (session.user as any).id,
-        skills: [],
-        interests: [],
-        preferences: {},
-      });
-      await student.save();
+      // Create student profile
+      const { data: newStudent } = await supabase
+        .from('students')
+        .insert({
+          user_id: token,
+          skills: [],
+          interests: [],
+        })
+        .select()
+        .single();
+
+      student = newStudent;
     }
 
     return NextResponse.json(student);
@@ -40,24 +46,39 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
     const body = await request.json();
 
-    let student = await Student.findOne({ userId: token });
+    let { data: student } = await supabase
+      .from('students')
+      .select('*')
+      .eq('user_id', token)
+      .single();
 
     if (!student) {
-      student = new Student({
-        userId: token,
-        ...body,
-      });
+      // Create new student
+      const { data: newStudent, error: createError } = await supabase
+        .from('students')
+        .insert({
+          user_id: token,
+          ...body,
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      return NextResponse.json(newStudent);
     } else {
-      Object.assign(student, body);
+      // Update existing student
+      const { data: updated, error: updateError } = await supabase
+        .from('students')
+        .update(body)
+        .eq('user_id', token)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+      return NextResponse.json(updated);
     }
-
-    await student.save();
-
-    return NextResponse.json(student);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }

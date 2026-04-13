@@ -2,43 +2,40 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 
 interface Internship {
-  _id: string;
+  id: string;
   title: string;
   company: string;
   location: string;
-  positionsAvailable: number;
+  positions_available: number;
   applicants: any[];
   status: string;
-  createdAt: string;
+  created_at: string;
 }
 
 export default function RecruiterDashboardPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
   const [internships, setInternships] = useState<Internship[]>([]);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState('');
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) {
       router.push('/login');
       return;
     }
 
-    if (status === 'authenticated' && (session?.user as any)?.role === 'recruiter') {
-      fetchInternships();
-    } else if (status === 'authenticated') {
-      router.push('/dashboard');
-    }
-  }, [status, router, session]);
+    setToken(storedToken);
+    fetchInternships(storedToken);
+  }, [router]);
 
-  const fetchInternships = async () => {
+  const fetchInternships = async (token: string) => {
     try {
       const response = await fetch('/api/internships?limit=100');
       if (response.ok) {

@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Internship } from '@/lib/models/Internship';
-import mongoose from 'mongoose';
+import { supabase } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
-
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-    }
-
-    const internship = await Internship.findById(params.id)
-      .populate('createdBy', 'name email company')
-      .lean();
+    const { id } = await params;
+    const { data: internship } = await supabase
+      .from('internships')
+      .select('*')
+      .eq('id', id)
+      .single();
 
     if (!internship) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -30,9 +25,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
 
@@ -40,21 +36,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-    }
-
-    const internship = await Internship.findById(params.id);
-
-    if (!internship) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-
     const body = await request.json();
-    Object.assign(internship, body);
-    await internship.save();
+
+    const { data: internship, error } = await supabase
+      .from('internships')
+      .update(body)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json(internship);
   } catch (error: any) {
@@ -64,32 +55,23 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const { id } = await params;
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!session || (session.user as any).role !== 'recruiter') {
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
+    const { error } = await supabase
+      .from('internships')
+      .delete()
+      .eq('id', id);
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-    }
-
-    const internship = await Internship.findById(params.id);
-
-    if (!internship) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-
-    if (internship.createdBy.toString() !== (session.user as any).id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    await Internship.deleteOne({ _id: params.id });
+    if (error) throw error;
 
     return NextResponse.json({ message: 'Deleted successfully' });
   } catch (error: any) {
