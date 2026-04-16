@@ -1,26 +1,29 @@
-import { createClient } from '@supabase/supabase-js';
+// Re-export Supabase clients from the proper SSR setup
+export { createClient } from '@/lib/supabase/client';
+export { createClient as createServerClient, createServiceClient } from '@/lib/supabase/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Legacy exports for backwards compatibility
+// These are deprecated - use the createClient/createServiceClient functions instead
+import { createBrowserClient } from '@supabase/ssr';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
+// Create a lazy-initialized browser client for client components
+let _supabase: ReturnType<typeof createBrowserClient> | null = null;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = new Proxy({} as ReturnType<typeof createBrowserClient>, {
+  get(_, prop) {
+    if (!_supabase) {
+      _supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+    }
+    return (_supabase as any)[prop];
+  },
+});
 
-// For server-side operations with service role key
-const supabaseServiceUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-export const supabaseServer = supabaseServiceKey
-  ? createClient(supabaseServiceUrl!, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    })
-  : supabase;
+// For server-side operations, use createServiceClient() instead
+// This export is kept for backwards compatibility but should not be used
+export const supabaseServer = supabase;
 
 export async function connectDB() {
   // Supabase is already initialized above

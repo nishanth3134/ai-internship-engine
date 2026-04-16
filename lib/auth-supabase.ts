@@ -1,4 +1,4 @@
-import { supabaseServer } from '@/lib/db';
+import { createServiceClient } from '@/lib/supabase/server';
 import bcrypt from 'bcryptjs';
 
 export async function hashPassword(password: string): Promise<string> {
@@ -19,8 +19,10 @@ export async function createUser(
   role: 'student' | 'recruiter'
 ) {
   try {
+    const supabase = await createServiceClient();
+    
     // Check if user already exists
-    const { data: existingUser } = await supabaseServer
+    const { data: existingUser } = await supabase
       .from('users')
       .select('id')
       .eq('email', email)
@@ -34,7 +36,7 @@ export async function createUser(
     const hashedPassword = await hashPassword(password);
 
     // Create user
-    const { data: user, error } = await supabaseServer
+    const { data: user, error } = await supabase
       .from('users')
       .insert({
         email,
@@ -50,7 +52,7 @@ export async function createUser(
 
     // If student, create student profile
     if (role === 'student' && user) {
-      await supabaseServer
+      await supabase
         .from('students')
         .insert({
           user_id: user.id,
@@ -74,7 +76,9 @@ export async function createUser(
 
 export async function getUserByEmail(email: string) {
   try {
-    const { data: user, error } = await supabaseServer
+    const supabase = await createServiceClient();
+    
+    const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
