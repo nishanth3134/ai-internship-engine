@@ -95,6 +95,8 @@ export default function ProfilePage() {
     setError('');
     setSuccess('');
 
+    console.log('[v0] Profile - Saving with token:', token);
+
     try {
       // Combine education info into a single string
       const educationInfo = `${formData.university} - ${formData.degree} (${formData.experience})${formData.bio ? ': ' + formData.bio : ''}`;
@@ -114,11 +116,14 @@ export default function ProfilePage() {
         }),
       });
 
+      console.log('[v0] Profile - Response status:', response.status);
+
       if (!response.ok) throw new Error('Failed to save');
       
       setSuccess('Profile updated successfully!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
+      console.log('[v0] Profile - Error:', err);
       setError('Failed to save profile');
     } finally {
       setSaving(false);

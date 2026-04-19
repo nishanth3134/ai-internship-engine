@@ -3,14 +3,22 @@ import { createServiceClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const userId = authHeader?.replace('Bearer ', '');
+    // Check all possible header names (case-insensitive)
+    const authHeader = request.headers.get('authorization') || 
+                       request.headers.get('Authorization');
+    
+    console.log('[v0] GET - All headers:', Array.from(request.headers.entries()));
+    console.log('[v0] GET - Auth header:', authHeader);
+    
+    const userId = authHeader?.replace('Bearer ', '')?.trim();
+    console.log('[v0] GET - Extracted userId:', userId);
 
     if (!userId) {
+      console.log('[v0] GET - No userId, returning 401');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createServiceClient();
+    const supabase = await createServiceClient();
 
     let { data: student, error: fetchError } = await supabase
       .from('students')
@@ -48,14 +56,18 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
-    const userId = authHeader?.replace('Bearer ', '');
+    console.log('[v0] PUT - Auth header:', authHeader);
+    
+    const userId = authHeader?.replace('Bearer ', '')?.trim();
+    console.log('[v0] PUT - Extracted userId:', userId);
 
     if (!userId) {
+      console.log('[v0] PUT - No userId, returning 401');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const supabase = createServiceClient();
+    const supabase = await createServiceClient();
 
     let { data: student, error: fetchError } = await supabase
       .from('students')
