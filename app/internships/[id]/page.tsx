@@ -23,6 +23,7 @@ interface Internship {
 export default function InternshipDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const id = params.id as string;
   const [internship, setInternship] = useState<Internship | null>(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -30,20 +31,25 @@ export default function InternshipDetailPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchInternship();
-  }, [params.id]);
+    if (id) {
+      fetchInternship();
+    } else {
+      setError('Missing internship ID');
+      setLoading(false);
+    }
+  }, [id]);
 
   const fetchInternship = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/internships/${params.id}`);
+      setError('');
+      const response = await fetch(`/api/internships/${id}`);
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      console.log('[v0] Fetched internship:', data);
       setInternship(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('[v0] Error fetching internship:', err);
-      setError('Failed to load internship');
+      setError(err.message || 'Failed to load internship');
     } finally {
       setLoading(false);
     }
@@ -66,7 +72,7 @@ export default function InternshipDetailPage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          internship_id: params.id,
+          internship_id: id,
         }),
       });
 
