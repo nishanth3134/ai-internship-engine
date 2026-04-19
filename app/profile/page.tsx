@@ -40,18 +40,39 @@ export default function ProfilePage() {
 
   const fetchProfile = async (token: string) => {
     try {
-      const response = await fetch('/api/student/profile');
+      const response = await fetch('/api/student/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (response.ok) {
         const data = await response.json();
+        
+        // Parse education field to extract university, degree, experience, and bio
+        let university = '';
+        let degree = '';
+        let experience = 'Beginner';
+        let bio = '';
+        
+        if (data.education) {
+          const educationMatch = data.education.match(/(.+?)\s*-\s*(.+?)\s*\((.+?)\)(:\s*(.+))?/);
+          if (educationMatch) {
+            university = educationMatch[1];
+            degree = educationMatch[2];
+            experience = educationMatch[3];
+            bio = educationMatch[5] || '';
+          }
+        }
+        
         setFormData({
-          bio: data.bio || '',
+          bio: bio,
           skills: data.skills?.join(', ') || '',
-          experience: data.experience || 'Beginner',
+          experience: experience,
           gpa: data.gpa || '',
-          university: data.university || '',
-          degree: data.degree || '',
+          university: university,
+          degree: degree,
           interests: data.interests?.join(', ') || '',
-          location: data.preferences?.location || '',
+          location: data.preferred_location || '',
         });
       }
     } catch (err) {
@@ -75,20 +96,21 @@ export default function ProfilePage() {
     setSuccess('');
 
     try {
+      // Combine education info into a single string
+      const educationInfo = `${formData.university} - ${formData.degree} (${formData.experience})${formData.bio ? ': ' + formData.bio : ''}`;
+      
       const response = await fetch('/api/student/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          bio: formData.bio,
+          education: educationInfo,
           skills: formData.skills.split(',').map((s) => s.trim()).filter((s) => s),
-          experience: formData.experience,
           gpa: formData.gpa ? parseFloat(formData.gpa) : null,
-          university: formData.university,
-          degree: formData.degree,
           interests: formData.interests.split(',').map((s) => s.trim()).filter((s) => s),
-          preferences: {
-            location: formData.location,
-          },
+          preferred_location: formData.location,
         }),
       });
 
